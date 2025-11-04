@@ -1,0 +1,13 @@
+init for smart connection
+
+connection_state declare integer
+
+; Состояния подключения
+CONNECTED declare integer
+DICSONNECTED declare integer
+; Значения
+0 varset DICSONNECTED
+1 varset CONNECTED
+
+; Изначально не подключено
+DICSONNECTED varset connection_state
