@@ -47,8 +47,8 @@ MAX_CONN_RETRIES declare integer
 MAX_DATA_RETRIES declare integer
 
 ; Инициализация
-60 varset RTO_CONNECT
-60 varset RTO_DATA
+80 varset RTO_CONNECT
+80 varset RTO_DATA
 2  varset MAX_CONN_RETRIES
 2  varset MAX_DATA_RETRIES
 0  varset conn_retries
@@ -71,7 +71,6 @@ N_DATAGRAM.REQ eventdown address $address userdata $connect_data
 
 ; Запускаем таймер повтора CONNECT (повторяем предыдущую отправку)
 CONNECT_TIMEOUT timer conn_timer_id $RTO_CONNECT address $address
-
 ```
 
 ## N_DATAGRAM.IND
@@ -174,6 +173,27 @@ good_ack:
 	; отправим следующий из очереди, если есть
 	subprog maybe_send_next
 	return
+
+; Подпрограмма - отправка следующего кадра из очереди
+return
+substart maybe_send_next
+$awaiting_data_ack if msn_busy
+qcount (out_q) varset payload_len
+$payload_len > 0 if msn_send
+return
+
+msn_busy:
+	return
+
+msn_send:
+	dequeue (out_q) varset next_frame
+	$next_frame varset last_data_frame
+	N_DATAGRAM.REQ eventdown address $curr_address userdata $next_frame
+	0 varset data_retries
+	1 varset awaiting_data_ack
+	DATA_TIMEOUT timer data_timer_id $RTO_DATA address $curr_address
+	return
+subend
 ```
 
 ## T_DISCONNECT.REQ
@@ -211,7 +231,6 @@ subprog maybe_send_next
 return
 
 ; В подпрограмме так отправляем: N_DATAGRAM.REQ eventdown address $curr_address userdata $userdata
-
 ; Подпрограмма - отправка следующего кадра из очереди
 return
 substart maybe_send_next
@@ -268,7 +287,7 @@ do_redo:
 	$data_retries + 1 varset data_retries
 	$data_retries <= $MAX_DATA_RETRIES if resend_data
 
-	out(""DATA_TIMEOUT timer [ERROR]: DATA_TIMEOUT exceeded, give up and notify upper")
+	out("DATA_TIMEOUT timer [ERROR]: DATA_TIMEOUT exceeded, give up and notify upper")
 	T_DISCONNECT.IND generateup address $address
 	0 varset data_retries
 	0 varset awaiting_data_ack
@@ -276,7 +295,7 @@ do_redo:
 	return
 
 resend_data:
-	out("DATA_TIMEOUT timer [WARN]: DATA retry №")
+	out("DATA_TIMEOUT timer [WARN]: DATA retry:")
 	out($data_retries)
 	N_DATAGRAM.REQ eventdown address $address userdata $last_data_frame
 	DATA_TIMEOUT timer data_timer_id $RTO_DATA address $address
