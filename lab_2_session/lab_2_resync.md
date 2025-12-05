@@ -622,7 +622,7 @@ return
 
 ## S_RESYNCHRONIZE.REQ
 ```
-
+;параметры:  token (число)
 out CurrentSystemName() ": S_RESYNCHRONIZE.REQ [INFO]: user requested resynchronize"
 
 ; Формируем PDU:
@@ -637,7 +637,7 @@ return
 
 ## S_RESYNCHRONIZE.RESP
 ```
-
+;параметры:  token (число)
 out CurrentSystemName() ": S_RESYNCHRONIZE.RESP [INFO]: user accepted resynchronize"
 
 ; Формируем PDU:
